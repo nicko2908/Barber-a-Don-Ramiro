@@ -39,7 +39,7 @@
                   </div>
                   <div class="filaInfo precioDestacado">
                     <span class="label">Total</span>
-                    <span class="valor">${{ ser.precio.toLocaleString('es-CO') }}</span>
+                    <span class="valor">{{ formatearPrecio(ser.precio)}}</span>
                   </div>
                 </div>
 
@@ -127,7 +127,7 @@
                   </div>
                   <div class="filaInfo precioDestacado">
                     <span class="label">Total</span>
-                    <span class="valor">${{ ser.precio.toLocaleString('es-CO') }}</span>
+                    <span class="valor">{{formatearPrecio(ser.precio)}}</span>
                   </div>
                 </div>
 
@@ -187,13 +187,13 @@
           </select>
 
           <h2>FECHA</h2>
-          <input type="date" v-model="formulario.fecha" required>
+          <input type="date" v-model="formulario.fecha" min="fechaHoyISO()" required>
 
           <h2>HORA</h2>
           <input type="time" v-model="formulario.hora" required>
 
           <h2>PRECIO</h2>
-          <p>${{ formulario.precio }}</p>
+          <p>{{formatearPrecio(formulario.precio) }}</p>
 
           <label>Método de pago:</label>
           <select v-model="formulario.mPago" required>
@@ -281,6 +281,12 @@ function cerrarModal() {
 }
 
 function guardarForm() {
+
+    if(formulario.value.fecha < fechaHoyISO()){
+    alert("No puedes agendar una cita en una fecha pasada")
+    return
+  }
+
   servicios.value.push({
     id: Date.now(),
     ...formulario.value,
@@ -351,6 +357,21 @@ function formatearFecha(fs) {
     month: 'long',
     year: 'numeric'
   })
+}
+
+function formatearPrecio(valor){
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0
+  }).format(valor)
+}
+
+function fechaHoyISO(){
+  const hoy = new Date()
+  return hoy.getFullYear() + '-' +
+    String(hoy.getMonth() + 1).padStart(2, '0') + '-' +
+    String(hoy.getDate()).padStart(2, '0')
 }
 </script>
 
