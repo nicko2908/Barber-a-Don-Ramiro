@@ -74,7 +74,7 @@
               <h2>CONFIRMAR SERVICIO</h2>
               <p>Servicio de <strong>{{ servicioAConfirmar.cliente }}</strong></p>
 
-              <form @submit.prevent="guardarConfirmacion">
+              <form @submit.prevent="guardarConfirmacion" novalidate>
                 <label>Calificación (1 a 5):</label>
                 <select v-model="confirmacionForm.calificacion" required>
                   <option disabled value="">Selecciona una</option>
@@ -146,7 +146,7 @@
     <div class="modal" v-if="mostrarModal">
       <div class="modalCont">
         <h2>FORMULARIO DE REGISTRO</h2>
-        <form @submit.prevent="guardarForm">
+        <form @submit.prevent="guardarForm" novalidate>
 
           <label>Ingrese el nombre del cliente:</label>
           <input type="text" v-model="formulario.cliente" placeholder="Ingrese el nombre" required>
@@ -155,12 +155,12 @@
           <div class="checkboxes">
             <div class="opcion">
               <input type="checkbox" id="corteclasico" value="cclasico" v-model="formulario.tServicio"
-                @change="calcularPrecio">
+                @change="manejarExclusion('cclasico')">
               <label>Corte clasico</label>
             </div>
             <div class="opcion">
               <input type="checkbox" id="cortemoderno" value="cmoderno" v-model="formulario.tServicio"
-                @change="calcularPrecio">
+                @change="manejarExclusion('cmoderno')">
               <label>Corte moderno</label>
             </div>
             <div class="opcion">
@@ -187,7 +187,7 @@
           </select>
 
           <h2>FECHA</h2>
-          <input type="date" v-model="formulario.fecha" min="fechaHoyISO()" required>
+          <input type="date" v-model="formulario.fecha" :min="fechaHoyISO()" required>
 
           <h2>HORA</h2>
           <input type="time" v-model="formulario.hora" required>
@@ -216,6 +216,9 @@
         </form>
       </div>
     </div>
+    <div class="toast" v-if="mensajeAlerta" :class="tipoAlerta">
+  {{ mensajeAlerta }}
+</div>
   </div>
 </template>
 
@@ -225,6 +228,8 @@ import { useLocalStorage } from '@vueuse/core'
 
 let servicios = useLocalStorage('ser', [])
 let mostrarModal = ref(false)
+let mensajeAlerta = ref("")
+let tipoAlerta = ref("")
 
 const preciosServicios = {
   cclasico: 25000,
@@ -281,9 +286,7 @@ function cerrarModal() {
 }
 
 function guardarForm() {
-
-    if(formulario.value.fecha < fechaHoyISO()){
-    alert("No puedes agendar una cita en una fecha pasada")
+    if(!validarFormulario()){
     return
   }
 
@@ -317,13 +320,6 @@ function abrirConfirmacion(ser) {
   }
 }
 
-function guardarConfirmacion() {
-  const indice = servicios.value.findIndex(s => s.id === servicioAConfirmar.value.id)
-  servicios.value[indice].calificacion = confirmacionForm.value.calificacion
-  servicios.value[indice].observaciones = confirmacionForm.value.observaciones
-  servicios.value[indice].confirmado = true
-  cancelarConfirmacion()
-}
 
 function cancelarConfirmacion() {
   servicioAConfirmar.value = null
@@ -372,6 +368,88 @@ function fechaHoyISO(){
   return hoy.getFullYear() + '-' +
     String(hoy.getMonth() + 1).padStart(2, '0') + '-' +
     String(hoy.getDate()).padStart(2, '0')
+}
+
+function validarFormulario(){
+  if(!formulario.value.cliente.trim()){
+    mostrarAlerta("Debes ingresar el nombre del cliente")
+    return false
+  }
+  if(formulario.value.tServicio.length === 0){
+    mostrarAlerta("Selecciona al menos un tipo de servicio")
+    return false
+  }
+  if(!formulario.value.barbero){
+    mostrarAlerta("Debes seleccionar un barbero")
+    return false
+  }
+  if(!formulario.value.fecha){
+    mostrarAlerta("Debes seleccionar una fecha")
+    return false
+  }
+  if(formulario.value.fecha < fechaHoyISO()){
+    mostrarAlerta("No puedes agendar una cita en una fecha pasada")
+    return false
+  }
+  if(!formulario.value.hora){
+    mostrarAlerta("Debes seleccionar una hora")
+    return false
+  }
+  if(!formulario.value.mPago){
+    mostrarAlerta("Debes seleccionar un método de pago")
+    return false
+  }
+  if(!formulario.value.ePago){
+    mostrarAlerta("Debes seleccionar el estado del pago")
+    return false
+  }
+  return true
+}
+
+function validarConfirmacion(){
+  if(!confirmacionForm.value.calificacion){
+    mostrarAlerta("Debes seleccionar una calificación")
+    return false
+  }
+  return true
+}
+
+function guardarConfirmacion() {
+  if(!validarConfirmacion()){
+    return
+  }
+
+  const indice = servicios.value.findIndex(s => s.id === servicioAConfirmar.value.id)
+  servicios.value[indice].calificacion = confirmacionForm.value.calificacion
+  servicios.value[indice].observaciones = confirmacionForm.value.observaciones
+  servicios.value[indice].confirmado = true
+  cancelarConfirmacion()
+}
+
+function mostrarAlerta(texto, tipo = "error"){
+  mensajeAlerta.value = texto
+  tipoAlerta.value = tipo
+  setTimeout(() => {
+    mensajeAlerta.value = ""
+  }, 2500)
+}
+
+function manejarExclusion(codigoSeleccionado){
+  const opuestos = {
+    cclasico: "cmoderno",
+    cmoderno: "cclasico"
+  }
+
+  const opuesto = opuestos[codigoSeleccionado]
+
+  if(opuesto && formulario.value.tServicio.includes(codigoSeleccionado)){
+    const indice = formulario.value.tServicio.indexOf(opuesto)
+    if(indice !== -1){
+      formulario.value.tServicio.splice(indice, 1)
+    }
+  }
+
+  calcularPrecio()
 }
 </script>
 
@@ -758,6 +836,33 @@ form {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
+}
+
+.toast{
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  font-weight: bold;
+  z-index: 999;
+  animation: aparecerToast 0.3s ease;
+}
+
+.toast.error{
+  background-color: #e74c3c;
+  color: white;
+}
+
+.toast.exito{
+  background-color: #2ecc71;
+  color: white;
+}
+
+@keyframes aparecerToast {
+  from{ opacity: 0; transform: translateX(-50%) translateY(-20px); }
+  to{ opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
 @keyframes aparecerModal {
