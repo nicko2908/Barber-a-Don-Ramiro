@@ -30,12 +30,24 @@
                     <span class="valor">{{ formatearFecha(ser.fecha) }}</span>
                   </div>
                   <div class="filaInfo">
+                    <span class="label">Hora</span>
+                    <span class="valor">{{ ser.hora }}</span>
+                  </div>
+                  <div class="filaInfo">
                     <span class="label">Servicio</span>
                     <span class="valor">{{ tServicioTexto(ser.tServicio) }}</span>
                   </div>
                   <div class="filaInfo">
                     <span class="label">Barbero</span>
                     <span class="valor">{{ ser.barbero }}</span>
+                  </div>
+                  <div class="filaInfo">
+                    <span class="label">Pago</span>
+                    <select class="selectPagoCard" v-model="ser.ePago" @change="actualizarPago(ser)">
+                      <option value="Pendiente">Pendiente</option>
+                      <option value="Pagado">Pagado</option>
+                      <option value="Fiado">Fiado</option>
+                    </select>
                   </div>
                   <div class="filaInfo precioDestacado">
                     <span class="label">Total</span>
@@ -48,9 +60,11 @@
                   <p v-if="ser.observaciones" class="obsTexto">"{{ ser.observaciones }}"</p>
                 </div>
 
+                <p class="avisoPago" v-if="!ser.confirmado && ser.ePago !== 'Pagado'">El pago debe estar marcado como "Pagado" para poder confirmar</p>
+
                 <div class="accionesCliente">
-                  <button v-if="!ser.confirmado" class="botonConfirmar" @click="abrirConfirmacion(ser)">Confirmar
-                    servicio</button>
+                  <button v-if="!ser.confirmado && ser.ePago === 'Pagado'" class="botonConfirmar" @click="abrirConfirmacion(ser)">Confirmar servicio</button>
+                  <button class="botonEditar" @click="abrirEdicion(ser)">Editar</button>
                   <button class="botonEliminar" @click="pedirConfirmacion(ser)">Eliminar</button>
                 </div>
 
@@ -97,6 +111,79 @@
             </div>
           </div>
 
+          <div class="modal" v-if="clienteAEditar">
+            <div class="modalCont">
+              <h2>EDITAR SERVICIO</h2>
+              <form @submit.prevent="guardarEdicion" novalidate>
+
+                <label>Ingrese el nombre del cliente:</label>
+                <input type="text" v-model="formularioEdicion.cliente" placeholder="Ingrese el nombre" required @keydown="bloquearEspacioEdicion">
+
+                <h2>TIPO DE SERVICIO</h2>
+                <div class="checkboxes">
+                  <div class="opcion">
+                    <input type="checkbox" value="cclasico" v-model="formularioEdicion.tServicio" @change="manejarExclusionEdicion('cclasico')">
+                    <label>Corte clasico</label>
+                  </div>
+                  <div class="opcion">
+                    <input type="checkbox" value="cmoderno" v-model="formularioEdicion.tServicio" @change="manejarExclusionEdicion('cmoderno')">
+                    <label>Corte moderno</label>
+                  </div>
+                  <div class="opcion">
+                    <input type="checkbox" value="barba" v-model="formularioEdicion.tServicio" @change="calcularPrecioEdicion">
+                    <label>Barba</label>
+                  </div>
+                  <div class="opcion">
+                    <input type="checkbox" value="cejas" v-model="formularioEdicion.tServicio" @change="calcularPrecioEdicion">
+                    <label>Cejas</label>
+                  </div>
+                  <div class="opcion">
+                    <input type="checkbox" value="tinte" v-model="formularioEdicion.tServicio" @change="calcularPrecioEdicion">
+                    <label>Tinte</label>
+                  </div>
+                </div>
+
+                <h2>SELECCIONE UN BARBERO</h2>
+                <select v-model="formularioEdicion.barbero" required>
+                  <option disabled value="">Seleccione un barbero</option>
+                  <option value="Don Ramiro">Don Ramíro</option>
+                  <option value="Empleado 1">Empleado 1</option>
+                  <option value="Empleado 2">Empleado 2</option>
+                </select>
+
+                <h2>FECHA</h2>
+                <input type="date" v-model="formularioEdicion.fecha" :min="fechaHoyISO()" required>
+
+                <h2>HORA</h2>
+                <input type="time" v-model="formularioEdicion.hora" :min="horaMinimaPara(formularioEdicion.fecha)" required>
+
+                <h2>PRECIO</h2>
+                <p>{{ formatearPrecio(formularioEdicion.precio) }}</p>
+
+                <label>Método de pago:</label>
+                <select v-model="formularioEdicion.mPago" required>
+                  <option disabled value="">Selecciona uno</option>
+                  <option value="Efectivo">Efectivo</option>
+                  <option value="Transferencia">Transferencia</option>
+                  <option value="Tarjeta">Tarjeta</option>
+                </select>
+
+                <label>Estado del pago:</label>
+                <select v-model="formularioEdicion.ePago" required>
+                  <option disabled value="">Selecciona una opción</option>
+                  <option value="Pagado">Pagado</option>
+                  <option value="Pendiente">Pendiente</option>
+                  <option value="Fiado">Fiado</option>
+                </select>
+
+                <div class="bModal">
+                  <button type="submit" class="botonGuardar">Guardar Cambios</button>
+                  <button type="button" class="botonCancelar" @click="cancelarEdicion">Cancelar</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
           <section class="listaSerHoy">
             <div class="tituloLista">
               <h2>SERVICIOS DEL DÍA DE HOY</h2>
@@ -118,12 +205,20 @@
                     <span class="valor">{{ formatearFecha(ser.fecha) }}</span>
                   </div>
                   <div class="filaInfo">
+                    <span class="label">Hora</span>
+                    <span class="valor">{{ ser.hora }}</span>
+                  </div>
+                  <div class="filaInfo">
                     <span class="label">Servicio</span>
                     <span class="valor">{{ tServicioTexto(ser.tServicio) }}</span>
                   </div>
                   <div class="filaInfo">
                     <span class="label">Barbero</span>
                     <span class="valor">{{ ser.barbero }}</span>
+                  </div>
+                  <div class="filaInfo">
+                    <span class="label">Pago</span>
+                    <span class="valor">{{ ser.ePago }}</span>
                   </div>
                   <div class="filaInfo precioDestacado">
                     <span class="label">Total</span>
@@ -149,7 +244,7 @@
         <form @submit.prevent="guardarForm" novalidate>
 
           <label>Ingrese el nombre del cliente:</label>
-          <input type="text" v-model="formulario.cliente" placeholder="Ingrese el nombre" required>
+          <input type="text" v-model="formulario.cliente" placeholder="Ingrese el nombre" required @keydown="bloquearEspacio">
 
           <h2>TIPO DE SERVICIO</h2>
           <div class="checkboxes">
@@ -164,9 +259,9 @@
               <label>Corte moderno</label>
             </div>
             <div class="opcion">
-              <input type="checkbox" id="corteybarba" value="cybarba" v-model="formulario.tServicio"
+              <input type="checkbox" id="barba" value="barba" v-model="formulario.tServicio"
                 @change="calcularPrecio">
-              <label>Corte + barba</label>
+              <label>Barba</label>
             </div>
             <div class="opcion">
               <input type="checkbox" id="cejas" value="cejas" v-model="formulario.tServicio" @change="calcularPrecio">
@@ -190,7 +285,7 @@
           <input type="date" v-model="formulario.fecha" :min="fechaHoyISO()" required>
 
           <h2>HORA</h2>
-          <input type="time" v-model="formulario.hora" required>
+          <input type="time" v-model="formulario.hora" :min="horaMinimaPara(formulario.fecha)" required>
 
           <h2>PRECIO</h2>
           <p>{{formatearPrecio(formulario.precio) }}</p>
@@ -208,6 +303,7 @@
             <option disabled value="">Selecciona una opción</option>
             <option value="Pagado">Pagado</option>
             <option value="Pendiente">Pendiente</option>
+            <option value="Fiado">Fiado</option>
           </select>
           <div class="bModal">
             <button type="submit" class="botonGuardar">Guardar Registro</button>
@@ -217,8 +313,8 @@
       </div>
     </div>
     <div class="toast" v-if="mensajeAlerta" :class="tipoAlerta">
-  {{ mensajeAlerta }}
-</div>
+      {{ mensajeAlerta }}
+    </div>
   </div>
 </template>
 
@@ -234,7 +330,7 @@ let tipoAlerta = ref("")
 const preciosServicios = {
   cclasico: 25000,
   cmoderno: 30000,
-  cybarba: 35000,
+  barba: 15000,
   cejas: 15000,
   tinte: 40000
 }
@@ -242,7 +338,7 @@ const preciosServicios = {
 const nombresServicios = {
   cclasico: "Corte clásico",
   cmoderno: "Corte moderno",
-  cybarba: "Corte + barba",
+  barba: "Barba",
   cejas: "Cejas",
   tinte: "Tinte"
 }
@@ -258,7 +354,6 @@ function calcularPrecio() {
   }
   formulario.value.precio = precio
 }
-
 
 let formulario = ref({
   cliente: "",
@@ -285,8 +380,34 @@ function cerrarModal() {
   }
 }
 
+function fechaHoyISO(){
+  const hoy = new Date()
+  return hoy.getFullYear() + '-' +
+    String(hoy.getMonth() + 1).padStart(2, '0') + '-' +
+    String(hoy.getDate()).padStart(2, '0')
+}
+
+function horaActualStr(){
+  const ahora = new Date()
+  return String(ahora.getHours()).padStart(2, '0') + ':' + String(ahora.getMinutes()).padStart(2, '0')
+}
+
+function horaMinimaPara(fecha){
+  if(fecha === fechaHoyISO()){
+    return horaActualStr()
+  }
+  return ''
+}
+
+function horaEsValida(fecha, hora){
+  if(fecha === fechaHoyISO()){
+    return hora >= horaActualStr()
+  }
+  return true
+}
+
 function guardarForm() {
-    if(!validarFormulario()){
+  if(!validarFormulario()){
     return
   }
 
@@ -313,13 +434,16 @@ let confirmacionForm = ref({
 })
 
 function abrirConfirmacion(ser) {
+  if(ser.ePago !== "Pagado"){
+    mostrarAlerta("El pago debe estar marcado como Pagado para confirmar el servicio")
+    return
+  }
   servicioAConfirmar.value = ser
   confirmacionForm.value = {
     calificacion: ser.calificacion || "",
     observaciones: ser.observaciones || ""
   }
 }
-
 
 function cancelarConfirmacion() {
   servicioAConfirmar.value = null
@@ -333,11 +457,7 @@ function confirmarEliminacion() {
 }
 
 function fHoy(fs) {
-  const hoy = new Date()
-  const hoyStr = hoy.getFullYear() + '-' +
-    String(hoy.getMonth() + 1).padStart(2, '0') + '-' +
-    String(hoy.getDate()).padStart(2, '0')
-  return fs === hoyStr
+  return fs === fechaHoyISO()
 }
 
 function serHoy() {
@@ -361,13 +481,6 @@ function formatearPrecio(valor){
     currency: 'COP',
     minimumFractionDigits: 0
   }).format(valor)
-}
-
-function fechaHoyISO(){
-  const hoy = new Date()
-  return hoy.getFullYear() + '-' +
-    String(hoy.getMonth() + 1).padStart(2, '0') + '-' +
-    String(hoy.getDate()).padStart(2, '0')
 }
 
 function validarFormulario(){
@@ -395,6 +508,10 @@ function validarFormulario(){
     mostrarAlerta("Debes seleccionar una hora")
     return false
   }
+  if(!horaEsValida(formulario.value.fecha, formulario.value.hora)){
+    mostrarAlerta("No puedes agendar una hora que ya pasó")
+    return false
+  }
   if(!formulario.value.mPago){
     mostrarAlerta("Debes seleccionar un método de pago")
     return false
@@ -416,6 +533,10 @@ function validarConfirmacion(){
 
 function guardarConfirmacion() {
   if(!validarConfirmacion()){
+    return
+  }
+  if(servicioAConfirmar.value.ePago !== "Pagado"){
+    mostrarAlerta("El pago debe estar marcado como Pagado para confirmar el servicio")
     return
   }
 
@@ -451,6 +572,137 @@ function manejarExclusion(codigoSeleccionado){
 
   calcularPrecio()
 }
+
+function bloquearEspacio(e){
+  if(e.key === " " && formulario.value.cliente.length === 0){
+    e.preventDefault()
+  }
+}
+
+let clienteAEditar = ref(null)
+let formularioEdicion = ref({
+  cliente: "",
+  tServicio: [],
+  barbero: "",
+  fecha: "",
+  hora: "",
+  precio: 0,
+  mPago: "",
+  ePago: ""
+})
+
+function abrirEdicion(ser){
+  clienteAEditar.value = ser
+  formularioEdicion.value = {
+    cliente: ser.cliente,
+    tServicio: [...ser.tServicio],
+    barbero: ser.barbero,
+    fecha: ser.fecha,
+    hora: ser.hora,
+    precio: ser.precio,
+    mPago: ser.mPago,
+    ePago: ser.ePago
+  }
+}
+
+function calcularPrecioEdicion(){
+  let precio = 0
+  for(const servicio of formularioEdicion.value.tServicio){
+    precio += preciosServicios[servicio]
+  }
+  formularioEdicion.value.precio = precio
+}
+
+function manejarExclusionEdicion(codigoSeleccionado){
+  const opuestos = {
+    cclasico: "cmoderno",
+    cmoderno: "cclasico"
+  }
+
+  const opuesto = opuestos[codigoSeleccionado]
+
+  if(opuesto && formularioEdicion.value.tServicio.includes(codigoSeleccionado)){
+    const indice = formularioEdicion.value.tServicio.indexOf(opuesto)
+    if(indice !== -1){
+      formularioEdicion.value.tServicio.splice(indice, 1)
+    }
+  }
+
+  calcularPrecioEdicion()
+}
+
+function bloquearEspacioEdicion(e){
+  if(e.key === " " && formularioEdicion.value.cliente.length === 0){
+    e.preventDefault()
+  }
+}
+
+function validarEdicion(){
+  formularioEdicion.value.cliente = formularioEdicion.value.cliente.trimStart()
+
+  if(!formularioEdicion.value.cliente.trim()){
+    mostrarAlerta("Debes ingresar el nombre del cliente")
+    return false
+  }
+  if(formularioEdicion.value.tServicio.length === 0){
+    mostrarAlerta("Selecciona al menos un tipo de servicio")
+    return false
+  }
+  if(!formularioEdicion.value.barbero){
+    mostrarAlerta("Debes seleccionar un barbero")
+    return false
+  }
+  if(!formularioEdicion.value.fecha){
+    mostrarAlerta("Debes seleccionar una fecha")
+    return false
+  }
+  if(formularioEdicion.value.fecha < fechaHoyISO()){
+    mostrarAlerta("No puedes agendar una cita en una fecha pasada")
+    return false
+  }
+  if(!formularioEdicion.value.hora){
+    mostrarAlerta("Debes seleccionar una hora")
+    return false
+  }
+  if(!horaEsValida(formularioEdicion.value.fecha, formularioEdicion.value.hora)){
+    mostrarAlerta("No puedes agendar una hora que ya pasó")
+    return false
+  }
+  if(!formularioEdicion.value.mPago){
+    mostrarAlerta("Debes seleccionar un método de pago")
+    return false
+  }
+  if(!formularioEdicion.value.ePago){
+    mostrarAlerta("Debes seleccionar el estado del pago")
+    return false
+  }
+  return true
+}
+
+function guardarEdicion(){
+  if(!validarEdicion()){
+    return
+  }
+
+  const indice = servicios.value.findIndex(s => s.id === clienteAEditar.value.id)
+  servicios.value[indice] = {
+    ...servicios.value[indice],
+    ...formularioEdicion.value
+  }
+
+  cancelarEdicion()
+  mostrarAlerta("Servicio actualizado correctamente", "exito")
+}
+
+function cancelarEdicion(){
+  clienteAEditar.value = null
+}
+
+function actualizarPago(ser){
+  const indice = servicios.value.findIndex(s => s.id === ser.id)
+  servicios.value[indice].ePago = ser.ePago
+  mostrarAlerta("Estado de pago actualizado a " + ser.ePago, "exito")
+}
 </script>
 
 <style>
@@ -474,7 +726,6 @@ function manejarExclusion(codigoSeleccionado){
 
 .inicio {
   text-align: center;
-  background-color: rgb(0, 0, 93);
   color: var(--color-principal);
   grid-column: 1;
   min-height: 100vh;
@@ -532,7 +783,6 @@ function manejarExclusion(codigoSeleccionado){
   background-color: var(--color-principal);
   border-radius: 1rem;
   border: none;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   font-weight: bold;
   cursor: pointer;
 }
@@ -542,7 +792,6 @@ function manejarExclusion(codigoSeleccionado){
   background-color: var(--color-principal);
   border-radius: 1rem;
   border: none;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   font-weight: bold;
   cursor: pointer;
 }
@@ -580,7 +829,6 @@ function manejarExclusion(codigoSeleccionado){
   margin-bottom: 1rem;
   padding: 1rem;
   text-align: left;
-  transition: border-color 0.3s;
 }
 
 .cardHeader {
@@ -625,6 +873,7 @@ function manejarExclusion(codigoSeleccionado){
 .filaInfo {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   font-size: 0.9rem;
 }
 
@@ -635,6 +884,21 @@ function manejarExclusion(codigoSeleccionado){
 .filaInfo .valor {
   color: white;
   text-align: right;
+}
+
+.selectPagoCard {
+  background-color: #1a1a1a;
+  color: white;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.selectPagoCard:focus {
+  outline: none;
+  border-color: var(--color-principal);
 }
 
 .precioDestacado .valor {
@@ -660,10 +924,17 @@ function manejarExclusion(codigoSeleccionado){
   margin-top: 0.3rem;
 }
 
+.avisoPago {
+  color: #e74c3c;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+}
+
 .accionesCliente {
   display: flex;
   gap: 0.5rem;
   margin-top: 0.8rem;
+  flex-wrap: wrap;
 }
 
 .botonConfirmar {
@@ -680,6 +951,21 @@ function manejarExclusion(codigoSeleccionado){
 
 .botonConfirmar:hover {
   filter: brightness(1.1);
+}
+
+.botonEditar {
+  padding: 0.5rem 0.8rem;
+  background-color: transparent;
+  color: #3498db;
+  border: 1px solid #3498db;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.botonEditar:hover {
+  background-color: rgba(52, 152, 219, 0.15);
 }
 
 .botonEliminar {
@@ -811,27 +1097,6 @@ form {
   border-bottom: none;
 }
 
-.accionesCliente {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.botonConfirmar {
-  padding: 0.4rem 0.8rem;
-  background-color: #2ecc71;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.badgeConfirmado {
-  color: #2ecc71;
-  font-weight: bold;
-}
-
 .checkboxes {
   display: flex;
   flex-wrap: wrap;
@@ -941,6 +1206,7 @@ form {
 
   .filaInfo{
     flex-direction: column;
+    align-items: flex-start;
     gap: 0.1rem;
   }
 
