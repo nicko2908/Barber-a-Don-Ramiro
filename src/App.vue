@@ -151,7 +151,7 @@
                 <input type="date" v-model="formularioEdicion.fecha" :min="fechaHoyISO()" required>
 
                 <h2>HORA</h2>
-                <input type="time" v-model="formularioEdicion.hora" :min="horaMinimaPara(formularioEdicion.fecha)" required>
+                <input type="time" v-model="formularioEdicion.hora" :min="horaMinimaPara(formularioEdicion.fecha)" max="20:00" required>
 
                 <h2>PRECIO</h2>
                 <p>{{ formatearPrecio(formularioEdicion.precio) }}</p>
@@ -275,7 +275,7 @@
           <input type="date" v-model="formulario.fecha" :min="fechaHoyISO()" required>
 
           <h2>HORA</h2>
-          <input type="time" v-model="formulario.hora" :min="horaMinimaPara(formulario.fecha)" required>
+          <input type="time" v-model="formulario.hora" :min="horaMinimaPara(formulario.fecha)" max="20:00" required>
 
           <h2>PRECIO</h2>
           <p>{{formatearPrecio(formulario.precio) }}</p>
@@ -384,9 +384,10 @@ function horaActualStr(){
 
 function horaMinimaPara(fecha){
   if(fecha === fechaHoyISO()){
-    return horaActualStr()
+    const actual = horaActualStr()
+    return actual > '08:00' ? actual : '08:00'
   }
-  return ''
+  return '08:00'
 }
 
 function horaEsValida(fecha, hora){
