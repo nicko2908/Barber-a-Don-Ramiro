@@ -26,33 +26,28 @@
 
                 <div class="cardBody">
                   <div class="filaInfo">
-                    <span class="label">Fecha</span>
-                    <span class="valor">{{ formatearFecha(ser.fecha) }}</span>
+                    <span class="label">{{ formatearFecha(ser.fecha) }}</span>
+                    <span class="valor horaValor">{{ ser.hora }}</span>
                   </div>
-                  <div class="filaInfo">
-                    <span class="label">Hora</span>
-                    <span class="valor">{{ ser.hora }}</span>
-                  </div>
-                  <div class="filaInfo">
-                    <span class="label">Servicio</span>
-                    <span class="valor">{{ tServicioTexto(ser.tServicio) }}</span>
-                  </div>
+                  <div class="servicioDestacado">{{ tServicioTexto(ser.tServicio) }}</div>
                   <div class="filaInfo">
                     <span class="label">Barbero</span>
                     <span class="valor">{{ ser.barbero }}</span>
                   </div>
-                  <div class="filaInfo">
-                    <span class="label">Pago</span>
-                    <select class="selectPagoCard" v-model="ser.ePago" @change="actualizarPago(ser)">
-                      <option value="Pendiente">Pendiente</option>
-                      <option value="Pagado">Pagado</option>
-                      <option value="Fiado">Fiado</option>
-                    </select>
-                  </div>
-                  <div class="filaInfo precioDestacado">
-                    <span class="label">Total</span>
-                    <span class="valor">{{ formatearPrecio(ser.precio)}}</span>
-                  </div>
+                </div>
+
+                <div class="filaInfo" v-if="!ser.confirmado">
+                  <span class="label">Pago</span>
+                  <select class="selectPagoCard" v-model="ser.ePago" @change="actualizarPago(ser)">
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Pagado">Pagado</option>
+                    <option value="Fiado">Fiado</option>
+                  </select>
+                </div>
+
+                <div class="filaInfo precioDestacado">
+                  <span class="label">Total</span>
+                  <span class="valor">{{ formatearPrecio(ser.precio)}}</span>
                 </div>
 
                 <div class="cardExtra" v-if="ser.confirmado">
@@ -62,10 +57,10 @@
 
                 <p class="avisoPago" v-if="!ser.confirmado && ser.ePago !== 'Pagado'">El pago debe estar marcado como "Pagado" para poder confirmar</p>
 
-                <div class="accionesCliente">
-                  <button v-if="!ser.confirmado && ser.ePago === 'Pagado'" class="botonConfirmar" @click="abrirConfirmacion(ser)">Confirmar servicio</button>
-                  <button class="botonEditar" @click="abrirEdicion(ser)">Editar</button>
-                  <button class="botonEliminar" @click="pedirConfirmacion(ser)">Eliminar</button>
+                <div class="accionesCliente" v-if="!ser.confirmado">
+                  <button v-if="!ser.confirmado && ser.ePago === 'Pagado'" class="botonConfirmar" @click="abrirConfirmacion(ser)">✅Confirmar servicioz✅</button>
+                  <button class="botonEditar" @click="abrirEdicion(ser)">✏️Editar✏️</button>
+                  <button class="botonEliminar" @click="pedirConfirmacion(ser)">❌Eliminar❌</button>
                 </div>
 
               </div>
@@ -89,15 +84,16 @@
               <p>Servicio de <strong>{{ servicioAConfirmar.cliente }}</strong></p>
 
               <form @submit.prevent="guardarConfirmacion" novalidate>
-                <label>Calificación (1 a 5):</label>
-                <select v-model="confirmacionForm.calificacion" required>
-                  <option disabled value="">Selecciona una</option>
-                  <option value="1">⭐</option>
-                  <option value="2">⭐⭐</option>
-                  <option value="3">⭐⭐⭐</option>
-                  <option value="4">⭐⭐⭐⭐</option>
-                  <option value="5">⭐⭐⭐⭐⭐</option>
-                </select>
+              <label>Calificación (1 a 5):</label>
+              <div class="estrellasSelector">
+                <span
+                  v-for="n in 5"
+                  :key="n"
+                  class="estrellaOpcion"
+                  :class="{ activa: n <= Number(confirmacionForm.calificacion) }"
+                  @click="confirmacionForm.calificacion = n"
+                >⭐</span>
+              </div>
 
                 <label>Observaciones</label>
                 <textarea v-model="confirmacionForm.observaciones"
@@ -201,17 +197,10 @@
 
                 <div class="cardBody">
                   <div class="filaInfo">
-                    <span class="label">Fecha</span>
-                    <span class="valor">{{ formatearFecha(ser.fecha) }}</span>
+                    <span class="label">{{ formatearFecha(ser.fecha) }}</span>
+                    <span class="valor horaValor">{{ ser.hora }}</span>
                   </div>
-                  <div class="filaInfo">
-                    <span class="label">Hora</span>
-                    <span class="valor">{{ ser.hora }}</span>
-                  </div>
-                  <div class="filaInfo">
-                    <span class="label">Servicio</span>
-                    <span class="valor">{{ tServicioTexto(ser.tServicio) }}</span>
-                  </div>
+                  <div class="servicioDestacado">{{ tServicioTexto(ser.tServicio) }}</div>
                   <div class="filaInfo">
                     <span class="label">Barbero</span>
                     <span class="valor">{{ ser.barbero }}</span>
@@ -220,10 +209,11 @@
                     <span class="label">Pago</span>
                     <span class="valor">{{ ser.ePago }}</span>
                   </div>
-                  <div class="filaInfo precioDestacado">
-                    <span class="label">Total</span>
-                    <span class="valor">{{formatearPrecio(ser.precio)}}</span>
-                  </div>
+                </div>
+
+                <div class="filaInfo precioDestacado">
+                  <span class="label">Total</span>
+                  <span class="valor">{{formatearPrecio(ser.precio)}}</span>
                 </div>
 
                 <div class="cardExtra" v-if="ser.confirmado">
@@ -306,8 +296,8 @@
             <option value="Fiado">Fiado</option>
           </select>
           <div class="bModal">
-            <button type="submit" class="botonGuardar">Guardar Registro</button>
             <button type="button" @click="cerrarModal" class="botonCancelar">Cancelar Registro</button>
+            <button type="submit" class="botonGuardar">Guardar Registro</button>
           </div>
         </form>
       </div>
@@ -779,21 +769,25 @@ function actualizarPago(ser){
 
 .modal .botonGuardar {
   padding: 1rem 2rem;
+  background-color: var(--color-principal);
+  border-radius: 1rem;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  background-color: rgb(0, 190, 0);
+  color: white;
+}
+
+.modal .botonCancelar {
+  padding: 1rem 2rem;
   margin-right: 10px;
   background-color: var(--color-principal);
   border-radius: 1rem;
   border: none;
   font-weight: bold;
   cursor: pointer;
-}
-
-.modal .botonCancelar {
-  padding: 1rem 2rem;
-  background-color: var(--color-principal);
-  border-radius: 1rem;
-  border: none;
-  font-weight: bold;
-  cursor: pointer;
+  background-color: rgb(170, 2, 2);
+  color: white;
 }
 
 .modal .botonCancelar:hover {
@@ -825,9 +819,9 @@ function actualizarPago(ser){
 
 .contenidoListaSer .clientes {
   background-color: var(--color-terciario);
-  border-radius: 10px;
-  margin-bottom: 1rem;
-  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 0.6rem;
+  padding: 0.7rem 0.9rem;
   text-align: left;
 }
 
@@ -835,20 +829,20 @@ function actualizarPago(ser){
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.7rem;
-  padding-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
+  padding-bottom: 0.35rem;
   border-bottom: 1px solid #3a3a3a;
 }
 
 .cardHeader h3 {
   color: var(--color-principal);
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 .estadoBadge {
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   font-weight: bold;
-  padding: 0.25rem 0.6rem;
+  padding: 0.2rem 0.5rem;
   border-radius: 20px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -867,14 +861,14 @@ function actualizarPago(ser){
 .cardBody {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.2rem;
 }
 
 .filaInfo {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
 .filaInfo .label {
@@ -886,13 +880,25 @@ function actualizarPago(ser){
   text-align: right;
 }
 
+.horaValor {
+  color: var(--color-principal);
+  font-weight: 600;
+}
+
+.servicioDestacado {
+  color: white;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 0.3rem 0;
+}
+
 .selectPagoCard {
   background-color: #1a1a1a;
   color: white;
   border: 1px solid #444;
   border-radius: 6px;
-  padding: 0.2rem 0.4rem;
-  font-size: 0.85rem;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.8rem;
   cursor: pointer;
 }
 
@@ -901,52 +907,59 @@ function actualizarPago(ser){
   border-color: var(--color-principal);
 }
 
+.precioDestacado {
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px dashed #3a3a3a;
+}
+
 .precioDestacado .valor {
   color: var(--color-principal);
   font-weight: bold;
-  font-size: 1.05rem;
+  font-size: 1.15rem;
 }
 
 .cardExtra {
-  margin-top: 0.7rem;
-  padding-top: 0.7rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
   border-top: 1px dashed #3a3a3a;
 }
 
 .calificacionTexto {
-  font-size: 0.95rem;
+  font-size: 0.85rem;
 }
 
 .obsTexto {
   color: #bbb;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-style: italic;
-  margin-top: 0.3rem;
+  margin-top: 0.25rem;
 }
 
 .avisoPago {
   color: #e74c3c;
-  font-size: 0.8rem;
-  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  margin-top: 0.4rem;
 }
 
 .accionesCliente {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 0.8rem;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
   flex-wrap: wrap;
 }
 
 .botonConfirmar {
-  flex: 1;
-  padding: 0.5rem;
+  flex: 0 0 auto;
+  padding: 0.4rem 0.9rem;
   background-color: #2ecc71;
   color: white;
   border: none;
   border-radius: 6px;
   font-weight: bold;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 
 .botonConfirmar:hover {
@@ -954,14 +967,14 @@ function actualizarPago(ser){
 }
 
 .botonEditar {
-  padding: 0.5rem 0.8rem;
+  padding: 0.4rem 0.7rem;
   background-color: transparent;
   color: #3498db;
   border: 1px solid #3498db;
   border-radius: 6px;
   font-weight: bold;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 
 .botonEditar:hover {
@@ -969,14 +982,14 @@ function actualizarPago(ser){
 }
 
 .botonEliminar {
-  padding: 0.5rem 0.8rem;
+  padding: 0.4rem 0.7rem;
   background-color: transparent;
   color: #e74c3c;
   border: 1px solid #e74c3c;
   border-radius: 6px;
   font-weight: bold;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 
 .botonEliminar:hover {
@@ -1123,6 +1136,35 @@ form {
 .toast.exito{
   background-color: #2ecc71;
   color: white;
+}
+
+.estrellasSelector {
+  display: flex;
+  gap: 0.4rem;
+  font-size: 1.8rem;
+  margin: 0.3rem 0;
+}
+
+.estrellaOpcion {
+  cursor: pointer;
+  filter: grayscale(1);
+  opacity: 0.35;
+  transition: all 0.15s ease;
+}
+
+.estrellaOpcion:hover {
+  opacity: 0.8;
+  transform: scale(1.1);
+}
+
+.estrellaOpcion.activa {
+  filter: grayscale(0);
+  opacity: 1;
+}
+
+.modalCont input[type="date"],
+.modalCont input[type="time"] {
+  color-scheme: dark;
 }
 
 @keyframes aparecerToast {
